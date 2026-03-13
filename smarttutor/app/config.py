@@ -12,10 +12,21 @@ load_dotenv()
 class ModelConfig:
     """模型配置类"""
     
-    # HKUST Azure 配置
+    # HKUST Azure 配置（默认优先使用）
     HKUST_AZURE_API_KEY = os.getenv("HKUST_AZURE_API_KEY", "")
     HKUST_AZURE_ENDPOINT = os.getenv("HKUST_AZURE_ENDPOINT", "https://hkust.azure-api.net")
+    HKUST_AZURE_DEPLOYMENT_NAME = os.getenv("HKUST_AZURE_DEPLOYMENT_NAME", "gpt-4o-mini")
     HKUST_AZURE_API_VERSION = os.getenv("HKUST_AZURE_API_VERSION", "2025-02-01-preview")
+    
+    # 标准 OpenAI 配置
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    
+    # 标准 Azure OpenAI 配置
+    AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY", "")
+    AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "https://api.openai.com")
+    AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
+    AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
     
     # 模型选择
     MATH_MODEL = os.getenv("MATH_MODEL", "o1-mini")        # 数学模型
@@ -34,6 +45,14 @@ class ModelConfig:
     MODEL_MAX_TOKENS = 2000
     
     @classmethod
+    def is_openai_configured(cls) -> bool:
+        return bool(cls.OPENAI_API_KEY)
+
+    @classmethod
+    def is_azure_configured(cls) -> bool:
+        return bool(cls.AZURE_OPENAI_API_KEY)
+
+    @classmethod
     def is_hkust_azure_configured(cls) -> bool:
         return bool(cls.HKUST_AZURE_API_KEY)
     
@@ -42,14 +61,14 @@ class ModelConfig:
         return bool(cls.DEEPSEEK_API_KEY)
     
     @classmethod
-    def is_azure_configured(cls) -> bool:
-        return False  # 标准 Azure 暂不使用
-    
-    @classmethod
     def get_active_provider(cls) -> str:
         """获取当前使用的API提供商"""
         if cls.is_hkust_azure_configured():
             return "hkust_azure"
+        elif cls.is_openai_configured():
+            return "openai"
+        elif cls.is_azure_configured():
+            return "azure"
         elif cls.is_deepseek_configured():
             return "deepseek"
         return None
