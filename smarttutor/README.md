@@ -135,16 +135,6 @@ cd hw_agent  # 如果你克隆到其它目录，请替换为对应路径
 
 ## 📋 完整安装流程
 
-> 🎯 本项目基于 `Python 3.8+`，请先确认你的电脑已经安装了 Python。
-
-你可以在终端里运行：
-
-```bash
-python --version
-```
-
-如果显示的版本低于 3.8，请先到 https://www.python.org/downloads/ 安装最新版本。
-
 ### 1. 克隆项目
 
 ```bash
@@ -152,19 +142,53 @@ git clone https://github.com/NanchenHu777/hw_agent.git
 cd hw_agent
 ```
 
-### 2. 创建虚拟环境（推荐）
+### 2. 环境准备（必做）
+
+本项目使用 Python 运行。请确认已安装 Python 3.8 或更高版本：
+
+```bash
+python --version
+```
+
+如果提示 `command not found`，请先安装 Python（macOS 可在官网下载安装，Windows 可在 https://www.python.org/downloads/ 下载安装）。
+
+#### 2.1 创建并激活虚拟环境（推荐）
+
+在项目根目录运行：
 
 ```bash
 python -m venv venv
-source venv/bin/activate  # macOS/Linux
-# 或
-venv\Scripts\activate     # Windows
 ```
+
+**激活虚拟环境**：
+
+- macOS / Linux：
+  ```bash
+  source venv/bin/activate
+  ```
+- Windows (PowerShell)：
+  ```powershell
+  .\venv\Scripts\Activate.ps1
+  ```
+- Windows (cmd)：
+  ```cmd
+  venv\Scripts\activate
+  ```
+
+激活后，你会看到命令行提示符前出现 `(venv)`，表示依赖将安装到隔离环境中。
 
 ### 3. 安装依赖
 
+在虚拟环境激活状态下运行：
+
 ```bash
 pip install -r requirements.txt
+```
+
+如果安装过程中报错，通常是因为缺少系统组件（如 `gcc`、`curl` 等），请根据错误提示安装对应依赖。通常 macOS 可以运行：
+
+```bash
+xcode-select --install
 ```
 
 ### 4. 配置 API 密钥
