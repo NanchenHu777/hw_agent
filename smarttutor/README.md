@@ -93,7 +93,7 @@ hw_agent/
 如果你已经配置好环境，只需运行：
 
 ```bash
-cd /Users/nanchen/Documents/hkust/5900/project
+cd hw_agent  # 克隆后的项目目录名
 ./start.sh
 ```
 
@@ -107,7 +107,7 @@ cd /Users/nanchen/Documents/hkust/5900/project
 ### 🛑 停止服务
 
 ```bash
-cd /Users/nanchen/Documents/hkust/5900/project
+cd hw_agent  # 克隆后的项目目录名
 ./stop.sh
 ```
 
@@ -119,7 +119,7 @@ cd /Users/nanchen/Documents/hkust/5900/project
 
 ```bash
 git clone https://github.com/NanchenHu777/hw_agent.git
-cd hw_agent/smarttutor
+cd hw_agent
 ```
 
 ### 2. 创建虚拟环境（推荐）
