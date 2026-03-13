@@ -1,0 +1,24 @@
+# SmartTutor - 作业辅导智能体
+
+## 项目依赖
+
+# Core dependencies
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-core>=0.1.0
+
+# Web framework
+fastapi>=0.104.0
+uvicorn>=0.24.0
+
+# Frontend
+gradio==4.8.0
+gradio-client>=0.0.1
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+httpx>=0.25.0
+
+# For conversation memory
+langchain-community>=0.0.10
