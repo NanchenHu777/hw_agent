@@ -11,6 +11,29 @@ from typing import Any, Dict, List, Optional
 class ConversationManager:
     """Manage multi-turn sessions and lightweight user state."""
 
+    FOLLOW_UP_PATTERNS = [
+        r"^and more\??$",
+        r"^explain more\??$",
+        r"^tell me more\??$",
+        r"^more details?\??$",
+        r"^can you elaborate\??$",
+        r"^go on\??$",
+        r"^continue\??$",
+        r"^what else\??$",
+        r"^why\??$",
+        r"^how\??$",
+        r"^how so\??$",
+        r"^when\??$",
+        r"^what year\??$",
+        r"^and then\??$",
+        r"^还有呢\??$",
+        r"^再多说一点\??$",
+        r"^解释更多\??$",
+        r"^展开讲讲\??$",
+        r"^然后呢\??$",
+        r"^为什么\??$",
+    ]
+
     def __init__(self):
         self.sessions: Dict[str, Dict[str, Any]] = {}
         self.grade_patterns = [
@@ -56,6 +79,7 @@ class ConversationManager:
                 "messages": [],
                 "grade": None,
                 "created_at": time.time(),
+                "last_response_kind": None,
             }
         return session_id
 
@@ -93,6 +117,16 @@ class ConversationManager:
         session = self._ensure_session(session_id)
         session["grade"] = grade
 
+    def get_last_response_kind(self, session_id: str) -> Optional[str]:
+        session = self.get_session(session_id)
+        if not session:
+            return None
+        return session.get("last_response_kind")
+
+    def set_last_response_kind(self, session_id: str, kind: Optional[str]):
+        session = self._ensure_session(session_id)
+        session["last_response_kind"] = kind
+
     def extract_grade_from_message(self, message: str) -> Optional[str]:
         normalized_message = message.lower().strip()
         if "小学生" in message or "小学" in message:
@@ -107,6 +141,17 @@ class ConversationManager:
 
     def is_grade_info(self, message: str) -> bool:
         return self.extract_grade_from_message(message) is not None
+
+    def looks_like_contextual_followup(self, message: str) -> bool:
+        normalized_message = message.lower().strip()
+        if not normalized_message:
+            return False
+
+        if len(normalized_message.split()) <= 3:
+            if normalized_message in {"more", "more?", "details", "details?", "why", "why?", "how", "how?"}:
+                return True
+
+        return any(re.search(pattern, normalized_message, re.IGNORECASE) for pattern in self.FOLLOW_UP_PATTERNS)
 
     def format_history_for_llm(self, session_id: str, max_messages: int = 10) -> str:
         session = self.get_session(session_id)

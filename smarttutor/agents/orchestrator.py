@@ -23,9 +23,11 @@ class AgentOrchestrator:
     def process_message(self, message: str, session_id: Optional[str] = None) -> Dict[str, Any]:
         session_id = session_id or self.conversation_manager.create_session()
         grade = self.conversation_manager.get_grade(session_id)
+        last_response_kind = self.conversation_manager.get_last_response_kind(session_id)
 
         self.conversation_manager.add_message(session_id, "user", message)
         classification = self.triage_agent.classify_sync(message)
+        classification = self._apply_followup_context(classification, message, last_response_kind)
         reason = classification.get("reason")
         action = classification.get("action")
 
@@ -41,6 +43,7 @@ class AgentOrchestrator:
         else:
             should_reject, rejection_message = self.guardrail_agent.check_sync(message)
         if should_reject:
+            self.conversation_manager.set_last_response_kind(session_id, "rejected")
             self.conversation_manager.add_message(session_id, "assistant", rejection_message)
             return {
                 "response": rejection_message,
@@ -58,6 +61,7 @@ class AgentOrchestrator:
         else:
             response_text = REJECTION_TEMPLATES["default"]
 
+        self.conversation_manager.set_last_response_kind(session_id, category if category in {"valid_math", "valid_history"} else "rejected")
         self.conversation_manager.add_message(session_id, "assistant", response_text)
         return {
             "response": response_text,
@@ -73,9 +77,11 @@ class AgentOrchestrator:
     ) -> Dict[str, Any]:
         session_id = session_id or self.conversation_manager.create_session()
         grade = self.conversation_manager.get_grade(session_id)
+        last_response_kind = self.conversation_manager.get_last_response_kind(session_id)
 
         self.conversation_manager.add_message(session_id, "user", message)
         classification = await self.triage_agent.classify(message)
+        classification = self._apply_followup_context(classification, message, last_response_kind)
         reason = classification.get("reason")
         action = classification.get("action")
 
@@ -91,6 +97,7 @@ class AgentOrchestrator:
         else:
             should_reject, rejection_message = await self.guardrail_agent.check(message)
         if should_reject:
+            self.conversation_manager.set_last_response_kind(session_id, "rejected")
             self.conversation_manager.add_message(session_id, "assistant", rejection_message)
             return {
                 "response": rejection_message,
@@ -108,6 +115,7 @@ class AgentOrchestrator:
         else:
             response_text = REJECTION_TEMPLATES["default"]
 
+        self.conversation_manager.set_last_response_kind(session_id, category if category in {"valid_math", "valid_history"} else "rejected")
         self.conversation_manager.add_message(session_id, "assistant", response_text)
         return {
             "response": response_text,
@@ -132,6 +140,7 @@ class AgentOrchestrator:
         else:
             response_text = "Thanks. I've noted that information. You can continue with a math or history homework question."
 
+        self.conversation_manager.set_last_response_kind(session_id, "grade_info")
         self.conversation_manager.add_message(session_id, "assistant", response_text)
         return {
             "response": response_text,
@@ -150,6 +159,7 @@ class AgentOrchestrator:
             f"Topics discussed: {', '.join(topics) if topics else 'none'}"
         )
 
+        self.conversation_manager.set_last_response_kind(session_id, "summarize")
         self.conversation_manager.add_message(session_id, "assistant", response_text)
         return {
             "response": response_text,
@@ -175,6 +185,41 @@ class AgentOrchestrator:
             category="valid_history",
             grade=grade,
         )
+
+    def _apply_followup_context(
+        self,
+        classification: Dict[str, Any],
+        message: str,
+        last_response_kind: Optional[str],
+    ) -> Dict[str, Any]:
+        if classification.get("category") in {"valid_math", "valid_history"}:
+            return classification
+
+        if classification.get("action") in {"handle_grade_info", "handle_summarize"}:
+            return classification
+
+        if last_response_kind not in {"valid_math", "valid_history", "summarize"}:
+            return classification
+
+        if not self.conversation_manager.looks_like_contextual_followup(message):
+            return classification
+
+        if last_response_kind == "summarize":
+            return {
+                "category": "invalid",
+                "intent": "summarize",
+                "reason": "Treated as a follow-up refinement of the previous summary request.",
+                "action": "handle_summarize",
+            }
+
+        subject_name = "math" if last_response_kind == "valid_math" else "history"
+        handoff_action = "handoff_to_math" if last_response_kind == "valid_math" else "handoff_to_history"
+        return {
+            "category": last_response_kind,
+            "intent": "ask_question",
+            "reason": f"Treated as a contextual follow-up to the previous {subject_name} answer.",
+            "action": handoff_action,
+        }
 
 
 orchestrator = AgentOrchestrator()

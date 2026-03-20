@@ -213,6 +213,46 @@ def test_primary_school_student_can_ask_advanced_math_without_rejection(monkeypa
     assert "simple explanation" in second["response"]
 
 
+def test_short_followup_uses_previous_history_context(monkeypatch):
+    responses = {
+        "Who was the first president of France?": {
+            "category": "valid_history",
+            "intent": "ask_question",
+            "reason": "history_homework",
+            "action": "handoff_to_history",
+        },
+        "and more?": {
+            "category": "invalid",
+            "intent": "chit_chat",
+            "reason": "too vague",
+            "action": "respond_rejection",
+        },
+    }
+    answers = iter(
+        [
+            "Louis-Napoleon Bonaparte was the first president of France.",
+            "He was elected in 1848 and later became Emperor Napoleon III in 1852.",
+        ]
+    )
+
+    monkeypatch.setattr(triage_agent, "classify_sync", lambda message: responses[message])
+    monkeypatch.setattr(
+        guardrail_agent,
+        "check_sync",
+        lambda message: (True, "This should not be used for contextual follow-ups."),
+    )
+    monkeypatch.setattr(guardrail_agent, "_rule_based_check", lambda message: (False, ""))
+    monkeypatch.setattr(answer_generator, "generate_answer", lambda **kwargs: next(answers))
+
+    session_id = "history-short-followup"
+    first = orchestrator.process_message("Who was the first president of France?", session_id)
+    second = orchestrator.process_message("and more?", session_id)
+
+    assert first["category"] == "valid_history"
+    assert second["category"] == "valid_history"
+    assert "Napoleon III" in second["response"]
+
+
 @pytest.mark.parametrize(
     ("question", "triage_result", "guardrail_result", "expected_category"),
     [
