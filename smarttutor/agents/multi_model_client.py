@@ -5,8 +5,13 @@ SmartTutor - 作业辅导智能体
 
 import json
 from typing import Optional, Dict, Any, List
+
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
-from langchain.schema import HumanMessage, SystemMessage
+
+try:
+    from langchain_core.messages import HumanMessage, SystemMessage
+except ImportError:  # pragma: no cover - compatibility with older langchain
+    from langchain.schema import HumanMessage, SystemMessage
 from app.config import ModelConfig
 
 
