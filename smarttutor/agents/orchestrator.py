@@ -37,6 +37,9 @@ class AgentOrchestrator:
         if action == "handle_summarize":
             return self._handle_summarize(session_id, reason)
 
+        if action == "respond_chitchat" or classification.get("intent") == "chit_chat":
+            return self._handle_chit_chat(message, session_id, reason)
+
         category = classification.get("category", "invalid")
         if category in {"valid_math", "valid_history"}:
             should_reject, rejection_message = self.guardrail_agent.check_explicit_rules(message)
@@ -90,6 +93,9 @@ class AgentOrchestrator:
 
         if action == "handle_summarize":
             return self._handle_summarize(session_id, reason)
+
+        if action == "respond_chitchat" or classification.get("intent") == "chit_chat":
+            return self._handle_chit_chat(message, session_id, reason)
 
         category = classification.get("category", "invalid")
         if category in {"valid_math", "valid_history"}:
@@ -170,6 +176,20 @@ class AgentOrchestrator:
             "action": "summarized",
         }
 
+    def _handle_chit_chat(
+        self, message: str, session_id: str, reason: Optional[str] = None
+    ) -> Dict[str, Any]:
+        response_text = self._build_chit_chat_response(message)
+        self.conversation_manager.add_message(session_id, "assistant", response_text)
+        return {
+            "response": response_text,
+            "session_id": session_id,
+            "category": "invalid",
+            "intent": "chit_chat",
+            "reason": reason or "simple_chit_chat",
+            "action": "chit_chat_responded",
+        }
+
     def _handle_math(self, question: str, session_id: str, grade: Optional[str]) -> str:
         return self.answer_generator.generate_answer(
             question=question,
@@ -220,6 +240,24 @@ class AgentOrchestrator:
             "reason": f"Treated as a contextual follow-up to the previous {subject_name} answer.",
             "action": handoff_action,
         }
+
+    def _build_chit_chat_response(self, message: str) -> str:
+        message_lower = message.lower()
+
+        gratitude_tokens = ["thank", "thanks", "helpful", "谢谢", "多谢"]
+        greeting_tokens = ["hi", "hello", "hey", "你好"]
+        farewell_tokens = ["bye", "goodbye", "see you", "再见"]
+
+        if any(token in message_lower for token in gratitude_tokens):
+            return "You're welcome."
+
+        if any(token in message_lower for token in greeting_tokens):
+            return "Hi. Feel free to ask a math or history homework question."
+
+        if any(token in message_lower for token in farewell_tokens):
+            return "Goodbye. Feel free to come back with a math or history homework question anytime."
+
+        return "I'm here to help with math and history homework questions."
 
 
 orchestrator = AgentOrchestrator()

@@ -209,3 +209,45 @@ def test_summary_request_is_handled_before_guardrail(monkeypatch):
 
     assert result["intent"] == "summarize"
     assert "We discussed math and history" in result["response"]
+
+
+def test_chitchat_is_handled_before_guardrail(monkeypatch):
+    triage_results = iter(
+        [
+            {
+                "category": "invalid",
+                "intent": "chit_chat",
+                "reason": "gratitude",
+                "action": "respond_rejection",
+            },
+            {
+                "category": "invalid",
+                "intent": "chit_chat",
+                "reason": "greeting",
+                "action": "respond_rejection",
+            },
+            {
+                "category": "invalid",
+                "intent": "chit_chat",
+                "reason": "farewell",
+                "action": "respond_rejection",
+            },
+        ]
+    )
+
+    def fail_guardrail(question):
+        raise AssertionError("guardrail should not run for simple chit-chat")
+
+    monkeypatch.setattr(triage_agent, "classify_sync", lambda question: next(triage_results))
+    monkeypatch.setattr(guardrail_agent, "check_sync", fail_guardrail)
+
+    thanks_result = orchestrator.process_message("That's helpful, thank you", "session-chitchat")
+    hi_result = orchestrator.process_message("hi", "session-chitchat")
+    bye_result = orchestrator.process_message("bye", "session-chitchat")
+
+    assert thanks_result["intent"] == "chit_chat"
+    assert "You're welcome" in thanks_result["response"]
+    assert hi_result["intent"] == "chit_chat"
+    assert "Hi" in hi_result["response"]
+    assert bye_result["intent"] == "chit_chat"
+    assert "Goodbye" in bye_result["response"]

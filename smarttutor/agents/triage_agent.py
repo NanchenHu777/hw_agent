@@ -58,6 +58,13 @@ class TriageAgent:
         if result_category == "invalid" and fallback_category in {"valid_math", "valid_history"}:
             return fallback
 
+        if (
+            result_category == "invalid"
+            and fallback.get("intent") == "chit_chat"
+            and result.get("intent") != "chit_chat"
+        ):
+            return fallback
+
         return result
 
     def _fallback_classification(self, question: str) -> Dict[str, Any]:
@@ -163,11 +170,29 @@ class TriageAgent:
             "summarize our conversation",
             "conversation so far",
         ]
+        chit_chat_patterns = [
+            "hi",
+            "hello",
+            "hey",
+            "thanks",
+            "thank you",
+            "thankyou",
+            "bye",
+            "goodbye",
+            "see you",
+            "you're welcome",
+            "you are welcome",
+            "你好",
+            "谢谢",
+            "多谢",
+            "再见",
+        ]
 
         math_score = sum(1 for keyword in math_keywords if keyword in question_lower)
         history_score = sum(1 for keyword in history_keywords if keyword in question_lower)
         grade_score = sum(1 for keyword in grade_patterns if keyword in question_lower)
         summarize_score = sum(1 for keyword in summarize_patterns if keyword in question_lower)
+        chit_chat_score = sum(1 for keyword in chit_chat_patterns if keyword in question_lower)
 
         equation_patterns = [
             r"\b[xyz]\s*=\s*[-+]?\d+",
@@ -192,6 +217,14 @@ class TriageAgent:
                 "intent": "grade_info",
                 "reason": "The user is sharing grade information.",
                 "action": "handle_grade_info",
+            }
+
+        if chit_chat_score > 0 and math_score == 0 and history_score == 0:
+            return {
+                "category": "invalid",
+                "intent": "chit_chat",
+                "reason": "Detected simple casual chit-chat.",
+                "action": "respond_chitchat",
             }
 
         if math_score > history_score and math_score > 0:

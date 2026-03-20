@@ -15,6 +15,8 @@ def test_triage_fallback_handles_short_core_cases():
     assert triage_agent._fallback_classification("I am a primary school student")["action"] == "handle_grade_info"
     assert triage_agent._fallback_classification("Can you explain calculus?")["category"] == "valid_math"
     assert triage_agent._fallback_classification("Summarize our conversation")["action"] == "handle_summarize"
+    assert triage_agent._fallback_classification("hi")["intent"] == "chit_chat"
+    assert triage_agent._fallback_classification("thanks")["intent"] == "chit_chat"
 
 
 def test_conversation_extract_grade_handles_primary_school():
