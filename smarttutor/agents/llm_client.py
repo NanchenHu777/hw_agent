@@ -1,6 +1,6 @@
 """
-SmartTutor - 作业辅导智能体
-LLM客户端 - 支持多种API提供商
+Legacy LLM client for SmartTutor.
+Supports multiple API providers.
 """
 
 import json
@@ -16,18 +16,18 @@ from app.config import ModelConfig
 
 
 class LLMClient:
-    """LLM客户端类 - 支持多种API提供商"""
+    """Legacy LLM client that supports multiple providers."""
     
     def __init__(self):
-        """初始化LLM客户端"""
+        """Initialize the legacy LLM client."""
         self.provider = ModelConfig.get_active_provider()
         self.model_name = ModelConfig.get_model_name()
         self.llm = self._create_llm()
     
     def _create_llm(self):
-        """根据配置创建LLM实例"""
+        """Create the configured LLM instance."""
         
-        # 优先使用配置的 provider
+        # Prefer the provider explicitly selected in configuration.
         provider = self.provider
         
         if provider == "deepseek":
@@ -51,7 +51,7 @@ class LLMClient:
             return None
     
     def _create_deepseek_llm(self):
-        """创建DeepSeek LLM实例（使用 OpenAI 兼容接口）"""
+        """Create a DeepSeek client through the OpenAI-compatible API."""
         return ChatOpenAI(
             model=ModelConfig.DEEPSEEK_MODEL,
             api_key=ModelConfig.DEEPSEEK_API_KEY,
@@ -61,7 +61,7 @@ class LLMClient:
         )
     
     def _create_openai_llm(self):
-        """创建标准OpenAI LLM实例"""
+        """Create a standard OpenAI chat client."""
         return ChatOpenAI(
             model=ModelConfig.OPENAI_MODEL,
             api_key=ModelConfig.OPENAI_API_KEY,
@@ -70,7 +70,7 @@ class LLMClient:
         )
     
     def _create_hkust_azure_llm(self):
-        """创建HKUST Azure API LLM实例"""
+        """Create an HKUST Azure chat client."""
         return AzureChatOpenAI(
             azure_deployment=ModelConfig.HKUST_AZURE_DEPLOYMENT_NAME,
             azure_endpoint=ModelConfig.HKUST_AZURE_ENDPOINT,
@@ -81,7 +81,7 @@ class LLMClient:
         )
     
     def _create_azure_llm(self):
-        """创建标准Azure OpenAI LLM实例"""
+        """Create a standard Azure OpenAI chat client."""
         return AzureChatOpenAI(
             azure_deployment=ModelConfig.AZURE_OPENAI_DEPLOYMENT_NAME,
             azure_endpoint=ModelConfig.AZURE_OPENAI_ENDPOINT,
@@ -92,7 +92,7 @@ class LLMClient:
         )
     
     def chat(self, message: str, system_prompt: Optional[str] = None) -> str:
-        """发送聊天请求"""
+        """Send a single-turn chat request."""
         if self.llm is None:
             return "Error: no LLM is configured. Please add API credentials to the .env file."
         
@@ -110,7 +110,7 @@ class LLMClient:
             return f"Error: {error_msg}"
     
     def chat_with_history(self, messages: list, system_prompt: Optional[str] = None) -> str:
-        """发送带历史的聊天请求"""
+        """Send a chat request with prior message history."""
         if self.llm is None:
             return "Error: no LLM is configured. Please add API credentials to the .env file."
         
@@ -118,7 +118,7 @@ class LLMClient:
         if system_prompt:
             chat_messages.append(SystemMessage(content=system_prompt))
         
-        # 添加历史消息
+        # Replay the stored message history into the prompt.
         for msg in messages:
             if msg["role"] == "user":
                 chat_messages.append(HumanMessage(content=msg["content"]))
@@ -134,12 +134,12 @@ class LLMClient:
             return f"Error: {error_msg}"
     
     def structured_output(self, message: str, system_prompt: str, format_json: bool = True) -> Dict[str, Any]:
-        """获取结构化输出"""
+        """Return structured JSON output when the model provides it."""
         response = self.chat(message, system_prompt)
         
         if format_json:
             try:
-                # 尝试解析JSON
+                # Strip optional Markdown fences before parsing JSON.
                 response = response.strip()
                 if response.startswith("```json"):
                     response = response[7:]
@@ -154,7 +154,7 @@ class LLMClient:
         return {"response": response}
     
     def test_connection(self) -> Dict[str, Any]:
-        """测试API连接"""
+        """Test whether the configured API can answer a simple request."""
         if self.llm is None:
             return {"success": False, "message": "No LLM is configured."}
         
@@ -177,7 +177,7 @@ class LLMClient:
             }
     
     def list_models(self) -> Dict[str, Any]:
-        """查询可用的模型列表"""
+        """Attempt to list available models from the HKUST Azure endpoint."""
         import requests
         
         if not ModelConfig.is_hkust_azure_configured():
@@ -218,5 +218,5 @@ class LLMClient:
         }
 
 
-# 全局LLM客户端实例
+# Global legacy client instance.
 llm_client = LLMClient()

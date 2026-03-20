@@ -1,6 +1,5 @@
 """
-SmartTutor - 作业辅导智能体
-数据模型定义
+Data models for SmartTutor.
 """
 
 from typing import Optional, Dict, Any
@@ -9,14 +8,14 @@ from enum import Enum
 
 
 class QuestionCategory(str, Enum):
-    """问题分类枚举"""
+    """Enumeration of supported question categories."""
     VALID_MATH = "valid_math"
     VALID_HISTORY = "valid_history"
     INVALID = "invalid"
 
 
 class UserIntent(str, Enum):
-    """用户意图枚举"""
+    """Enumeration of supported user intents."""
     ASK_QUESTION = "ask_question"
     SUMMARIZE = "summarize"
     GRADE_INFO = "grade_info"
@@ -24,13 +23,13 @@ class UserIntent(str, Enum):
 
 
 class ChatRequest(BaseModel):
-    """聊天请求模型"""
+    """Request payload for a chat turn."""
     message: str = Field(..., description="User message")
     session_id: Optional[str] = Field(None, description="Session ID")
 
 
 class ChatResponse(BaseModel):
-    """聊天响应模型"""
+    """Response payload returned by the chat endpoint."""
     response: str = Field(..., description="Assistant response")
     session_id: str = Field(..., description="Session ID")
     category: str = Field(..., description="Question category")
@@ -39,7 +38,7 @@ class ChatResponse(BaseModel):
 
 
 class ConversationSummary(BaseModel):
-    """对话总结模型"""
+    """Summary payload for a conversation."""
     session_id: str
     summary: str
     topics_discussed: list[str]
@@ -47,7 +46,7 @@ class ConversationSummary(BaseModel):
 
 
 class ConversationHistoryItem(BaseModel):
-    """对话历史项"""
+    """Single item in the stored conversation history."""
     role: str
     content: str
     timestamp: float

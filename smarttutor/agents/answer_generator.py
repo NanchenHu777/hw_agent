@@ -1,6 +1,5 @@
 """
-SmartTutor - 作业辅导智能体
-答案生成器 - 支持多模型
+Answer generation utilities for SmartTutor.
 """
 
 from typing import Dict, Any, List
@@ -10,7 +9,7 @@ from app.prompts import SYSTEM_PROMPT, SUMMARY_PROMPT, MATH_EXPERT_PROMPT, HISTO
 
 
 class AnswerGenerator:
-    """答案生成器 - 支持多模型"""
+    """Generate answers and summaries with task-specific models."""
     
     def __init__(self):
         self.llm_client = multi_model_client
@@ -24,42 +23,42 @@ class AnswerGenerator:
         grade: str = None
     ) -> str:
         """
-        生成问题答案
+        Generate an answer for a tutoring question.
         
         Args:
-            question: 用户问题
-            session_id: 会话ID
-            category: 问题分类
-            grade: 用户年级
+            question: User question.
+            session_id: Conversation session id.
+            category: Classified question category.
+            grade: Stored user grade level.
             
         Returns:
-            生成的答案
+            Generated answer text.
         """
-        # 获取对话历史
+        # Retrieve recent conversation history for context.
         history = self.conversation_manager.get_history(session_id)
         
-        # 格式化年级信息
+        # Normalize grade information for the prompt.
         grade_info = grade if grade else "unspecified"
         
-        # 根据分类选择模型和构建提示
+        # Choose the prompt and model family for this subject.
         if category == "valid_math":
             system_prompt = self._build_math_prompt(grade_info)
-            task = "math"  # 使用 DeepSeek
+            task = "math"  # Use the math-preferred model route.
         elif category == "valid_history":
             system_prompt = self._build_history_prompt(grade_info)
-            task = "history"  # 使用 Azure
+            task = "history"  # Use the history-preferred model route.
         else:
             system_prompt = SYSTEM_PROMPT
             task = "default"
         
-        # 如果有历史，添加上下文
+        # Include compact dialogue context when history is available.
         if history:
             context = self._build_context(history)
             full_question = f"{context}\n\nCurrent question: {question}"
         else:
             full_question = question
         
-        # 根据任务类型选择模型
+        # Route the request through the task-specific model client.
         response = self.llm_client.chat(full_question, system_prompt, task=task)
 
         if category in {"valid_math", "valid_history"} and self._needs_simplified_retry(response):
@@ -69,13 +68,13 @@ class AnswerGenerator:
         return response
     
     def _build_math_prompt(self, grade: str) -> str:
-        """构建数学提示"""
+        """Build the system prompt for math questions."""
         prompt = MATH_EXPERT_PROMPT.format(grade=grade)
         prompt += "\n\n" + SYSTEM_PROMPT
         return prompt
     
     def _build_history_prompt(self, grade: str) -> str:
-        """构建历史提示"""
+        """Build the system prompt for history questions."""
         prompt = HISTORY_EXPERT_PROMPT.format(grade=grade)
         prompt += "\n\n" + SYSTEM_PROMPT
         return prompt
@@ -118,8 +117,8 @@ class AnswerGenerator:
         )
     
     def _build_context(self, history: List[Dict[str, str]]) -> str:
-        """构建对话上下文"""
-        context_messages = history[-6:]  # 只取最近6条消息
+        """Build compact conversation context for the next model call."""
+        context_messages = history[-6:]  # Keep only the most recent turns.
         
         context = "Conversation history:\n"
         for msg in context_messages:
@@ -130,15 +129,15 @@ class AnswerGenerator:
     
     def generate_summary(self, session_id: str) -> Dict[str, Any]:
         """
-        生成对话总结
+        Generate a summary for the current conversation.
         
         Args:
-            session_id: 会话ID
+            session_id: Conversation session id.
             
         Returns:
-            包含summary, topics_discussed, unanswered_questions的字典
+            Dictionary containing summary, topics_discussed, and unanswered_questions.
         """
-        # 获取对话历史
+        # Read the stored conversation history.
         history = self.conversation_manager.get_history(session_id)
         
         if not history:
@@ -148,13 +147,13 @@ class AnswerGenerator:
                 "unanswered_questions": []
             }
         
-        # 格式化对话历史
+        # Flatten the conversation into prompt text.
         conversation_history = "\n".join([
             f"{msg['role']}: {msg['content']}"
             for msg in history
         ])
         
-        # 调用 LLM 生成总结
+        # Ask the model to generate a structured summary.
         prompt = SUMMARY_PROMPT.format(conversation_history=conversation_history)
         
         result = self.llm_client.structured_output(
@@ -179,7 +178,7 @@ class AnswerGenerator:
         }
     
     def _extract_topics_simple(self, history: List[Dict[str, str]]) -> List[str]:
-        """简单提取主题"""
+        """Extract coarse topic labels without another model call."""
         topics = []
         keywords = {
             "math": ["计算", "求解", "方程", "函数", "几何", "代数", "equation", "math", "solve", "calculus"],
@@ -196,5 +195,5 @@ class AnswerGenerator:
         return topics
 
 
-# 全局答案生成器实例
+# Global answer generator instance.
 answer_generator = AnswerGenerator()
