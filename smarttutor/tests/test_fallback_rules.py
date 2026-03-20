@@ -22,6 +22,24 @@ def test_conversation_extract_grade_handles_primary_school():
     assert conversation_manager.extract_grade_from_message("I am a primary school student") == "小学生"
 
 
+def test_triage_prefers_obvious_math_fallback_when_llm_is_too_strict(monkeypatch):
+    monkeypatch.setattr(
+        triage_agent.llm_client,
+        "structured_output",
+        lambda **kwargs: {
+            "category": "invalid",
+            "intent": "chit_chat",
+            "reason": "too broad",
+            "action": "respond_rejection",
+        },
+    )
+
+    result = triage_agent.classify_sync("Can you explain calculus?")
+
+    assert result["category"] == "valid_math"
+    assert result["action"] == "handoff_to_math"
+
+
 def test_guardrail_rule_based_check_rejects_travel_question():
     should_reject, message = guardrail_agent._rule_based_check("去伦敦怎么走？")
 

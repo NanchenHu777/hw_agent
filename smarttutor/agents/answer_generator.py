@@ -61,7 +61,11 @@ class AnswerGenerator:
         
         # 根据任务类型选择模型
         response = self.llm_client.chat(full_question, system_prompt, task=task)
-        
+
+        if category in {"valid_math", "valid_history"} and self._needs_simplified_retry(response):
+            retry_prompt = self._build_retry_prompt(system_prompt)
+            response = self.llm_client.chat(full_question, retry_prompt, task=task)
+
         return response
     
     def _build_math_prompt(self, grade: str) -> str:
@@ -75,6 +79,39 @@ class AnswerGenerator:
         prompt = HISTORY_EXPERT_PROMPT.format(grade=grade)
         prompt += "\n\n" + SYSTEM_PROMPT
         return prompt
+
+    def _build_retry_prompt(self, system_prompt: str) -> str:
+        """Add a stronger instruction when the model refuses only because the topic is advanced."""
+        return (
+            f"{system_prompt}\n\n"
+            "重要补充：不要仅仅因为用户年级较低、题目较难或内容较进阶，就直接拒绝回答。"
+            "如果题目仍属于数学或历史，请先说明这是进阶内容，再用更简单的语言解释核心概念，"
+            "并尽量给出最基本的答案、结论或第一步。"
+            "只有在题目不属于数学/历史，或涉及不当内容时，才可以拒绝回答。"
+        )
+
+    def _needs_simplified_retry(self, response: str) -> bool:
+        normalized = response.strip().lower()
+        if not normalized.startswith(("抱歉", "对不起", "sorry")):
+            return False
+
+        grade_or_difficulty_markers = [
+            "小学生",
+            "年级",
+            "复杂",
+            "太难",
+            "超纲",
+            "进阶",
+            "不适合",
+            "可能有些复杂",
+            "beyond",
+            "too advanced",
+        ]
+        refusal_markers = ["无法帮助", "不能帮助", "不能回答", "cannot help", "can't help"]
+
+        return any(marker in response for marker in grade_or_difficulty_markers) or any(
+            marker in normalized for marker in refusal_markers
+        )
     
     def _build_context(self, history: List[Dict[str, str]]) -> str:
         """构建对话上下文"""

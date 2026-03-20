@@ -2,6 +2,7 @@ import importlib
 
 import pytest
 
+from agents.answer_generator import answer_generator
 from agents.conversation import ConversationManager
 from agents.multi_model_client import MultiModelClient
 
@@ -53,3 +54,26 @@ def test_multi_model_client_falls_back_when_math_model_is_denied():
 
     assert result == "fallback answer"
     assert default_llm.calls == 1
+
+
+def test_answer_generator_retries_when_model_refuses_only_due_to_grade(monkeypatch):
+    calls = []
+
+    def fake_chat(message, system_prompt, task="default"):
+        calls.append({"message": message, "system_prompt": system_prompt, "task": task})
+        if len(calls) == 1:
+            return "抱歉，我无法帮助回答这个问题，因为导数对小学生来说可能有些复杂。"
+        return "这是进阶内容，但可以先记住：x^2 的导数是 2x。"
+
+    monkeypatch.setattr(answer_generator.llm_client, "chat", fake_chat)
+    monkeypatch.setattr(answer_generator.conversation_manager, "get_history", lambda session_id: [])
+
+    result = answer_generator.generate_answer(
+        question="求 x^2 的导数是多少？",
+        session_id="session-retry-grade",
+        category="valid_math",
+        grade="小学生",
+    )
+
+    assert "2x" in result
+    assert len(calls) == 2

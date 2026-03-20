@@ -23,9 +23,7 @@ class TriageAgent:
                 task="triage",
                 format_json=True,
             )
-            if "error" in result:
-                return self._fallback_classification(question)
-            return result
+            return self._normalize_classification(question, result)
         except Exception as exc:
             print(f"Triage classification error: {exc}")
             return self._fallback_classification(question)
@@ -38,12 +36,28 @@ class TriageAgent:
                 task="triage",
                 format_json=True,
             )
-            if "error" in result:
-                return self._fallback_classification(question)
-            return result
+            return self._normalize_classification(question, result)
         except Exception as exc:
             print(f"Triage classification error: {exc}")
             return self._fallback_classification(question)
+
+    def _normalize_classification(self, question: str, result: Dict[str, Any]) -> Dict[str, Any]:
+        if "error" in result:
+            return self._fallback_classification(question)
+
+        fallback = self._fallback_classification(question)
+        fallback_action = fallback.get("action")
+        result_action = result.get("action")
+        fallback_category = fallback.get("category", "invalid")
+        result_category = result.get("category", "invalid")
+
+        if fallback_action in {"handle_grade_info", "handle_summarize"} and result_action != fallback_action:
+            return fallback
+
+        if result_category == "invalid" and fallback_category in {"valid_math", "valid_history"}:
+            return fallback
+
+        return result
 
     def _fallback_classification(self, question: str) -> Dict[str, Any]:
         """Keyword fallback for short, obvious cases."""

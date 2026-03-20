@@ -35,7 +35,11 @@ class AgentOrchestrator:
         if action == "handle_summarize":
             return self._handle_summarize(session_id, reason)
 
-        should_reject, rejection_message = self.guardrail_agent.check_sync(message)
+        category = classification.get("category", "invalid")
+        if category in {"valid_math", "valid_history"}:
+            should_reject, rejection_message = self.guardrail_agent.check_explicit_rules(message)
+        else:
+            should_reject, rejection_message = self.guardrail_agent.check_sync(message)
         if should_reject:
             self.conversation_manager.add_message(session_id, "assistant", rejection_message)
             return {
@@ -47,7 +51,6 @@ class AgentOrchestrator:
                 "action": "rejected",
             }
 
-        category = classification.get("category", "invalid")
         if category == "valid_math":
             response_text = self._handle_math(message, session_id, grade)
         elif category == "valid_history":
@@ -82,7 +85,11 @@ class AgentOrchestrator:
         if action == "handle_summarize":
             return self._handle_summarize(session_id, reason)
 
-        should_reject, rejection_message = await self.guardrail_agent.check(message)
+        category = classification.get("category", "invalid")
+        if category in {"valid_math", "valid_history"}:
+            should_reject, rejection_message = self.guardrail_agent.check_explicit_rules(message)
+        else:
+            should_reject, rejection_message = await self.guardrail_agent.check(message)
         if should_reject:
             self.conversation_manager.add_message(session_id, "assistant", rejection_message)
             return {
@@ -94,7 +101,6 @@ class AgentOrchestrator:
                 "action": "rejected",
             }
 
-        category = classification.get("category", "invalid")
         if category == "valid_math":
             response_text = self._handle_math(message, session_id, grade)
         elif category == "valid_history":

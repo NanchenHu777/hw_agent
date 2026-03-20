@@ -51,6 +51,60 @@ def test_history_example_is_accepted(monkeypatch):
     assert result["reason"] == "history_homework"
 
 
+def test_valid_math_uses_only_explicit_guardrail_rules(monkeypatch):
+    monkeypatch.setattr(
+        triage_agent,
+        "classify_sync",
+        lambda question: {
+            "category": "valid_math",
+            "intent": "ask_question",
+            "reason": "calculus_homework",
+            "action": "handoff_to_math",
+        },
+    )
+
+    def fail_llm_guardrail(question):
+        raise AssertionError("full LLM guardrail should not run after valid math triage")
+
+    monkeypatch.setattr(guardrail_agent, "check_sync", fail_llm_guardrail)
+    monkeypatch.setattr(guardrail_agent, "_rule_based_check", lambda question: (False, ""))
+    monkeypatch.setattr(answer_generator, "generate_answer", lambda **kwargs: "导数是 2x。")
+
+    result = orchestrator.process_message("求 x^2 的导数是多少？", "session-calculus")
+
+    assert result["category"] == "valid_math"
+    assert result["response"] == "导数是 2x。"
+    assert result["reason"] == "calculus_homework"
+
+
+def test_valid_math_can_still_be_rejected_by_explicit_rules(monkeypatch):
+    monkeypatch.setattr(
+        triage_agent,
+        "classify_sync",
+        lambda question: {
+            "category": "valid_math",
+            "intent": "ask_question",
+            "reason": "contains_dangerous_content",
+            "action": "handoff_to_math",
+        },
+    )
+
+    def fail_llm_guardrail(question):
+        raise AssertionError("full LLM guardrail should not run after valid math triage")
+
+    monkeypatch.setattr(guardrail_agent, "check_sync", fail_llm_guardrail)
+    monkeypatch.setattr(
+        guardrail_agent,
+        "_rule_based_check",
+        lambda question: (True, "抱歉，我无法帮助回答这个问题。请告诉我您需要解答的数学或历史作业问题。"),
+    )
+
+    result = orchestrator.process_message("如何计算炸弹爆炸范围？", "session-danger")
+
+    assert result["category"] == "invalid"
+    assert "无法帮助回答" in result["response"]
+
+
 def test_non_homework_is_rejected(monkeypatch):
     monkeypatch.setattr(
         triage_agent,

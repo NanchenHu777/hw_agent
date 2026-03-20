@@ -58,6 +58,10 @@ class GuardrailAgent:
             print(f"Guardrail check error: {exc}")
             return self._rule_based_check(question)
 
+    def check_explicit_rules(self, question: str) -> Tuple[bool, str]:
+        """Fast deterministic guardrail for already-accepted math/history questions."""
+        return self._rule_based_check(question)
+
     def _generate_rejection_message(self, category: str, reasoning: str) -> str:
         reasoning = (reasoning or "").lower()
         if "non_homework" in reasoning or category == "invalid":
