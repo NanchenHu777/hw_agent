@@ -37,7 +37,10 @@ class AgentOrchestrator:
         if action == "handle_summarize":
             return self._handle_summarize(session_id, reason)
 
-        if action == "respond_chitchat" or classification.get("intent") == "chit_chat":
+        if action == "respond_chitchat" or (
+            classification.get("intent") == "chit_chat"
+            and self._looks_like_simple_chit_chat(message)
+        ):
             return self._handle_chit_chat(message, session_id, reason)
 
         category = classification.get("category", "invalid")
@@ -94,7 +97,10 @@ class AgentOrchestrator:
         if action == "handle_summarize":
             return self._handle_summarize(session_id, reason)
 
-        if action == "respond_chitchat" or classification.get("intent") == "chit_chat":
+        if action == "respond_chitchat" or (
+            classification.get("intent") == "chit_chat"
+            and self._looks_like_simple_chit_chat(message)
+        ):
             return self._handle_chit_chat(message, session_id, reason)
 
         category = classification.get("category", "invalid")
@@ -258,6 +264,28 @@ class AgentOrchestrator:
             return "Goodbye. Feel free to come back with a math or history homework question anytime."
 
         return "I'm here to help with math and history homework questions."
+
+    def _looks_like_simple_chit_chat(self, message: str) -> bool:
+        message_lower = message.lower().strip()
+        simple_tokens = [
+            "hi",
+            "hello",
+            "hey",
+            "thanks",
+            "thank you",
+            "thankyou",
+            "bye",
+            "goodbye",
+            "see you",
+            "you're welcome",
+            "you are welcome",
+            "helpful",
+            "你好",
+            "谢谢",
+            "多谢",
+            "再见",
+        ]
+        return any(token in message_lower for token in simple_tokens)
 
 
 orchestrator = AgentOrchestrator()
