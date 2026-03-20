@@ -57,12 +57,15 @@ class TriageAgent:
             "几何",
             "代数",
             "微积分",
+            "微分",
+            "积分",
             "概率",
             "统计",
             "等于",
             "根号",
             "平方根",
             "math",
+            "calculus",
             "x",
             "y",
             "z",
@@ -85,7 +88,22 @@ class TriageAgent:
             "哪一年",
             "history",
         ]
-        grade_patterns = ["大一", "大二", "大三", "大四", "高一", "高二", "高三", "年级", "学生", "我是"]
+        grade_patterns = [
+            "大一",
+            "大二",
+            "大三",
+            "大四",
+            "高一",
+            "高二",
+            "高三",
+            "小学生",
+            "小学",
+            "primary school",
+            "elementary school",
+            "年级",
+            "学生",
+            "我是",
+        ]
         summarize_patterns = ["总结", "summarize", "总结对话", "conversation so far"]
 
         math_score = sum(1 for keyword in math_keywords if keyword in question_lower)

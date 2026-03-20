@@ -174,6 +174,45 @@ def test_summary_followup_should_not_be_rejected(monkeypatch):
     assert "Math and history" in second["response"]
 
 
+def test_primary_school_student_can_ask_advanced_math_without_rejection(monkeypatch):
+    triage_results = iter(
+        [
+            {
+                "category": "invalid",
+                "intent": "grade_info",
+                "reason": "grade_info",
+                "action": "handle_grade_info",
+            },
+            {
+                "category": "valid_math",
+                "intent": "ask_question",
+                "reason": "advanced_math_question",
+                "action": "handoff_to_math",
+            },
+        ]
+    )
+    captured = {}
+
+    monkeypatch.setattr(triage_agent, "classify_sync", lambda _: next(triage_results))
+    monkeypatch.setattr(guardrail_agent, "check_sync", lambda _: (False, ""))
+
+    def fake_generate_answer(**kwargs):
+        captured["grade"] = kwargs["grade"]
+        return "This topic is advanced for primary school, but here is a simple explanation."
+
+    monkeypatch.setattr(answer_generator, "generate_answer", fake_generate_answer)
+
+    session_id = "primary-advanced-math"
+    first = orchestrator.process_message("我是小学生", session_id)
+    second = orchestrator.process_message("Can you explain calculus?", session_id)
+
+    assert first["intent"] == "grade_info"
+    assert conversation_manager.get_grade(session_id) == "小学生"
+    assert second["category"] == "valid_math"
+    assert captured["grade"] == "小学生"
+    assert "simple explanation" in second["response"]
+
+
 @pytest.mark.parametrize(
     ("question", "triage_result", "guardrail_result", "expected_category"),
     [

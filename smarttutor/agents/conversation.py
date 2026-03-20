@@ -14,6 +14,7 @@ class ConversationManager:
     def __init__(self):
         self.sessions: Dict[str, Dict[str, Any]] = {}
         self.grade_patterns = [
+            (r"小学生|小学\s*生|小学|primary school|elementary school", "小学生"),
             (r"大学\s*一\s*年级|大学一年级|大一", "大一"),
             (r"大学\s*二\s*年级|大学二年级|大二", "大二"),
             (r"大学\s*三\s*年级|大学三年级|大三", "大三"),
@@ -72,6 +73,12 @@ class ConversationManager:
         session["grade"] = grade
 
     def extract_grade_from_message(self, message: str) -> Optional[str]:
+        normalized_message = message.lower().strip()
+        if "小学生" in message or "小学" in message:
+            return "小学生"
+        if "primary school" in normalized_message or "elementary school" in normalized_message:
+            return "小学生"
+
         for pattern, grade in self.grade_patterns:
             if re.search(pattern, message, re.IGNORECASE):
                 return grade
