@@ -1,12 +1,11 @@
 """
-SmartTutor - 作业辅导智能体
-使用 OpenAI Agents SDK 的专家 Agent
+Legacy expert-agent definitions built on the OpenAI Agents SDK.
 """
 
 import sys
 import os
 
-# 添加 SDK 路径
+# Add the bundled SDK path when present.
 sdk_path = os.path.join(os.path.dirname(__file__), "sdk")
 if os.path.exists(sdk_path):
     sys.path.insert(0, sdk_path)
@@ -15,7 +14,7 @@ from typing import Optional, Dict, Any
 from agents import Agent
 from pydantic import BaseModel
 
-# 导入模型工厂
+# Import legacy model-factory helpers.
 from agents.model_factory import (
     get_model_for_task,
     build_deepseek_model,
@@ -26,18 +25,18 @@ from agents.model_factory import (
 from app.config import ModelConfig
 
 
-# ==================== 数学导师 Agent ====================
+# ==================== Math Tutor Agent ====================
 
 def create_math_tutor_agent() -> Agent:
     """
-    创建数学导师 Agent
-    使用 DeepSeek 模型（性价比高，数学能力强）
+    Create the legacy math tutor agent.
+    It prefers DeepSeek when that model is configured.
     """
     try:
         model = get_model_for_task("math")
     except Exception as e:
         print(f"创建数学导师失败: {e}")
-        # 回退到默认模型
+        # Fall back to a default model binding.
         model = None
     
     return Agent(
@@ -60,12 +59,12 @@ def create_math_tutor_agent() -> Agent:
     )
 
 
-# ==================== 历史导师 Agent ====================
+# ==================== History Tutor Agent ====================
 
 def create_history_tutor_agent() -> Agent:
     """
-    创建历史导师 Agent
-    使用 Azure 模型（适合历史/哲学问题）
+    Create the legacy history tutor agent.
+    It prefers Azure-backed models when available.
     """
     try:
         model = get_model_for_task("history")
@@ -93,15 +92,15 @@ def create_history_tutor_agent() -> Agent:
     )
 
 
-# ==================== 全局 Agent 实例 ====================
+# ==================== Global Agent Instances ====================
 
-# 延迟创建 Agent，确保模型配置已加载
+# Lazily create agents after configuration has been loaded.
 _math_tutor_agent: Optional[Agent] = None
 _history_tutor_agent: Optional[Agent] = None
 
 
 def get_math_tutor() -> Agent:
-    """获取数学导师 Agent（延迟初始化）"""
+    """Return the lazily initialized math tutor agent."""
     global _math_tutor_agent
     if _math_tutor_agent is None:
         _math_tutor_agent = create_math_tutor_agent()
@@ -109,7 +108,7 @@ def get_math_tutor() -> Agent:
 
 
 def get_history_tutor() -> Agent:
-    """获取历史导师 Agent（延迟初始化）"""
+    """Return the lazily initialized history tutor agent."""
     global _history_tutor_agent
     if _history_tutor_agent is None:
         _history_tutor_agent = create_history_tutor_agent()

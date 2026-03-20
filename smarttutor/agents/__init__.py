@@ -1,9 +1,8 @@
 """
-SmartTutor - 作业辅导智能体
-Agent 模块
+Agent package exports for SmartTutor.
 """
 
-# 只导入必要的模块，避免循环依赖
+# Import only lightweight dependencies here to avoid circular imports.
 from agents.conversation import conversation_manager
 
 __all__ = [

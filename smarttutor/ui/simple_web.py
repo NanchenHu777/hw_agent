@@ -10,7 +10,7 @@ HTML_CONTENT = '''<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>SmartTutor - 作业辅导</title>
+    <title>SmartTutor - Homework Tutor</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
         h1 { color: #333; }
@@ -24,11 +24,11 @@ HTML_CONTENT = '''<!DOCTYPE html>
     </style>
 </head>
 <body>
-    <h1>📚 SmartTutor - 作业辅导智能体</h1>
-    <p>帮助您解答数学和历史作业问题</p>
+    <h1>📚 SmartTutor - Homework Tutor</h1>
+    <p>Ask math and history homework questions here.</p>
     <div id="chat"></div>
-    <input type="text" id="msg" placeholder="请输入您的数学或历史作业问题..." onkeypress="if(event.key==='Enter')send()">
-    <button onclick="send()">发送</button>
+    <input type="text" id="msg" placeholder="Enter a math or history homework question..." onkeypress="if(event.key==='Enter')send()">
+    <button onclick="send()">Send</button>
 
     <script>
         const chat = document.getElementById('chat');
@@ -36,7 +36,7 @@ HTML_CONTENT = '''<!DOCTYPE html>
         function addMessage(text, isUser) {
             const div = document.createElement('div');
             div.className = 'message ' + (isUser ? 'user' : 'assistant');
-            div.innerHTML = isUser ? '<b>你:</b> ' + text : '<b>SmartTutor:</b> ' + text;
+            div.innerHTML = isUser ? '<b>You:</b> ' + text : '<b>SmartTutor:</b> ' + text;
             chat.appendChild(div);
             chat.scrollTop = chat.scrollHeight;
         }
@@ -56,9 +56,9 @@ HTML_CONTENT = '''<!DOCTYPE html>
                     body: JSON.stringify({message})
                 });
                 const data = await res.json();
-                addMessage(data.response || '无响应', false);
+                addMessage(data.response || 'No response', false);
             } catch (e) {
-                addMessage('错误: ' + e.message, false);
+                addMessage('Error: ' + e.message, false);
             }
         }
     </script>
@@ -76,5 +76,5 @@ class Handler(SimpleHTTPRequestHandler):
         else:
             super().do_GET()
 
-print("启动简单Web前端: http://localhost:7860")
+print("Starting simple web frontend at: http://localhost:7860")
 HTTPServer(('0.0.0.0', 7860), Handler).serve_forever()
