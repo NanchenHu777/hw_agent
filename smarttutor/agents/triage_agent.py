@@ -2,6 +2,7 @@
 Triage agent for routing SmartTutor requests.
 """
 
+import re
 from typing import Any, Dict
 
 from agents.multi_model_client import multi_model_client
@@ -80,13 +81,17 @@ class TriageAgent:
             "平方根",
             "math",
             "calculus",
-            "x",
-            "y",
-            "z",
-            "+",
-            "-",
-            "*",
-            "/",
+            "solve",
+            "equation",
+            "derivative",
+            "integral",
+            "algebra",
+            "geometry",
+            "probability",
+            "statistics",
+            "rational",
+            "square root",
+            "distance",
         ]
         history_keywords = [
             "历史",
@@ -101,6 +106,15 @@ class TriageAgent:
             "谁是",
             "哪一年",
             "history",
+            "president",
+            "emperor",
+            "war",
+            "dynasty",
+            "event",
+            "historical",
+            "who was",
+            "what year",
+            "when did",
         ]
         grade_patterns = [
             "大一",
@@ -114,22 +128,61 @@ class TriageAgent:
             "小学",
             "primary school",
             "elementary school",
+            "first-year university student",
+            "second-year university student",
+            "third-year university student",
+            "fourth-year university student",
+            "first year university",
+            "second year university",
+            "third year university",
+            "fourth year university",
+            "freshman",
+            "sophomore",
+            "junior",
+            "senior",
+            "first-year high school",
+            "second-year high school",
+            "third-year high school",
+            "graduate student",
+            "postgraduate",
+            "doctoral student",
+            "phd",
             "年级",
             "学生",
             "我是",
+            "grade",
+            "student",
+            "i am",
         ]
-        summarize_patterns = ["总结", "summarize", "总结对话", "conversation so far"]
+        summarize_patterns = [
+            "总结",
+            "总结对话",
+            "summarize",
+            "summarise",
+            "summary",
+            "summarize our conversation",
+            "conversation so far",
+        ]
 
         math_score = sum(1 for keyword in math_keywords if keyword in question_lower)
         history_score = sum(1 for keyword in history_keywords if keyword in question_lower)
         grade_score = sum(1 for keyword in grade_patterns if keyword in question_lower)
         summarize_score = sum(1 for keyword in summarize_patterns if keyword in question_lower)
 
+        equation_patterns = [
+            r"\b[xyz]\s*=\s*[-+]?\d+",
+            r"\b[xyz]\s*[+\-*/]\s*[-+]?\d+",
+            r"[-+]?\d+\s*[+\-*/=]\s*[-+]?\d+",
+            r"\bx\^?\d",
+            r"sqrt\s*\(",
+        ]
+        math_score += sum(1 for pattern in equation_patterns if re.search(pattern, question_lower))
+
         if summarize_score > 0:
             return {
                 "category": "invalid",
                 "intent": "summarize",
-                "reason": "用户请求总结对话",
+                "reason": "The user is asking for a conversation summary.",
                 "action": "handle_summarize",
             }
 
@@ -137,7 +190,7 @@ class TriageAgent:
             return {
                 "category": "invalid",
                 "intent": "grade_info",
-                "reason": "用户告知年级信息",
+                "reason": "The user is sharing grade information.",
                 "action": "handle_grade_info",
             }
 
@@ -145,7 +198,7 @@ class TriageAgent:
             return {
                 "category": "valid_math",
                 "intent": "ask_question",
-                "reason": "检测到数学相关关键词",
+                "reason": "Detected clear math-related keywords.",
                 "action": "handoff_to_math",
             }
 
@@ -153,14 +206,14 @@ class TriageAgent:
             return {
                 "category": "valid_history",
                 "intent": "ask_question",
-                "reason": "检测到历史相关关键词",
+                "reason": "Detected clear history-related keywords.",
                 "action": "handoff_to_history",
             }
 
         return {
             "category": "invalid",
             "intent": "ask_question",
-            "reason": "无法识别问题类型",
+            "reason": "Unable to identify the question type.",
             "action": "respond_rejection",
         }
 

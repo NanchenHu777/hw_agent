@@ -25,17 +25,17 @@ class UserIntent(str, Enum):
 
 class ChatRequest(BaseModel):
     """聊天请求模型"""
-    message: str = Field(..., description="用户消息")
-    session_id: Optional[str] = Field(None, description="会话ID")
+    message: str = Field(..., description="User message")
+    session_id: Optional[str] = Field(None, description="Session ID")
 
 
 class ChatResponse(BaseModel):
     """聊天响应模型"""
-    response: str = Field(..., description="助手回复")
-    session_id: str = Field(..., description="会话ID")
-    category: str = Field(..., description="问题分类")
-    intent: str = Field(..., description="用户意图")
-    reason: Optional[str] = Field(None, description="分类理由")
+    response: str = Field(..., description="Assistant response")
+    session_id: str = Field(..., description="Session ID")
+    category: str = Field(..., description="Question category")
+    intent: str = Field(..., description="User intent")
+    reason: Optional[str] = Field(None, description="Classification reason")
 
 
 class ConversationSummary(BaseModel):

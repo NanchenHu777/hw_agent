@@ -31,23 +31,23 @@ class LLMClient:
         provider = self.provider
         
         if provider == "deepseek":
-            print(f"使用 DeepSeek API: {ModelConfig.DEEPSEEK_MODEL}")
+            print(f"Using DeepSeek API: {ModelConfig.DEEPSEEK_MODEL}")
             return self._create_deepseek_llm()
         
         elif provider == "openai":
-            print(f"使用 OpenAI API: {ModelConfig.OPENAI_MODEL}")
+            print(f"Using OpenAI API: {ModelConfig.OPENAI_MODEL}")
             return self._create_openai_llm()
         
         elif provider == "hkust_azure":
-            print(f"使用 HKUST Azure API: {ModelConfig.HKUST_AZURE_DEPLOYMENT_NAME}")
+            print(f"Using HKUST Azure API: {ModelConfig.HKUST_AZURE_DEPLOYMENT_NAME}")
             return self._create_hkust_azure_llm()
         
         elif provider == "azure":
-            print(f"使用 Azure OpenAI API: {ModelConfig.AZURE_OPENAI_DEPLOYMENT_NAME}")
+            print(f"Using Azure OpenAI API: {ModelConfig.AZURE_OPENAI_DEPLOYMENT_NAME}")
             return self._create_azure_llm()
         
         else:
-            print("警告：未配置任何LLM API")
+            print("Warning: no LLM API is configured.")
             return None
     
     def _create_deepseek_llm(self):
@@ -94,7 +94,7 @@ class LLMClient:
     def chat(self, message: str, system_prompt: Optional[str] = None) -> str:
         """发送聊天请求"""
         if self.llm is None:
-            return "错误：LLM未配置。请在.env文件中配置API密钥。"
+            return "Error: no LLM is configured. Please add API credentials to the .env file."
         
         messages = []
         if system_prompt:
@@ -106,13 +106,13 @@ class LLMClient:
             return response.content
         except Exception as e:
             error_msg = str(e)
-            print(f"LLM调用错误: {error_msg}")
-            return f"发生错误: {error_msg}"
+            print(f"LLM error: {error_msg}")
+            return f"Error: {error_msg}"
     
     def chat_with_history(self, messages: list, system_prompt: Optional[str] = None) -> str:
         """发送带历史的聊天请求"""
         if self.llm is None:
-            return "错误：LLM未配置。请在.env文件中配置API密钥。"
+            return "Error: no LLM is configured. Please add API credentials to the .env file."
         
         chat_messages = []
         if system_prompt:
@@ -130,8 +130,8 @@ class LLMClient:
             return response.content
         except Exception as e:
             error_msg = str(e)
-            print(f"LLM调用错误: {error_msg}")
-            return f"发生错误: {error_msg}"
+            print(f"LLM error: {error_msg}")
+            return f"Error: {error_msg}"
     
     def structured_output(self, message: str, system_prompt: str, format_json: bool = True) -> Dict[str, Any]:
         """获取结构化输出"""
@@ -149,21 +149,21 @@ class LLMClient:
                     response = response[:-3]
                 return json.loads(response.strip())
             except json.JSONDecodeError as e:
-                return {"error": f"无法解析JSON: {e}", "raw": response}
+                return {"error": f"Unable to parse JSON: {e}", "raw": response}
         
         return {"response": response}
     
     def test_connection(self) -> Dict[str, Any]:
         """测试API连接"""
         if self.llm is None:
-            return {"success": False, "message": "LLM未配置"}
+            return {"success": False, "message": "No LLM is configured."}
         
         try:
             test_message = "Hello, please respond with 'OK' if you receive this."
             response = self.llm.invoke([HumanMessage(content=test_message)])
             return {
                 "success": True,
-                "message": "连接成功",
+                "message": "Connection successful.",
                 "provider": self.provider,
                 "model": self.model_name,
                 "response": response.content[:100]
@@ -171,7 +171,7 @@ class LLMClient:
         except Exception as e:
             return {
                 "success": False,
-                "message": f"连接失败: {str(e)}",
+                "message": f"Connection failed: {str(e)}",
                 "provider": self.provider,
                 "model": self.model_name
             }
@@ -181,7 +181,7 @@ class LLMClient:
         import requests
         
         if not ModelConfig.is_hkust_azure_configured():
-            return {"success": False, "message": "HKUST Azure 未配置"}
+            return {"success": False, "message": "HKUST Azure is not configured."}
         
         endpoints = [
             f"{ModelConfig.HKUST_AZURE_ENDPOINT}/openai/models",
@@ -204,7 +204,7 @@ class LLMClient:
                     data = response.json()
                     return {
                         "success": True,
-                        "message": f"获取成功 (端点: {url})",
+                        "message": f"Successfully fetched models from {url}",
                         "models": data,
                         "endpoint": url
                     }
@@ -213,7 +213,7 @@ class LLMClient:
         
         return {
             "success": False,
-            "message": "无法获取模型列表，请联系老师获取可用的deployment名称",
+            "message": "Unable to fetch the model list. Please confirm the available deployment names.",
             "provider": self.provider
         }
 

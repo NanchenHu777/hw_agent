@@ -14,7 +14,7 @@ from app.models import ChatRequest, ChatResponse, ConversationSummary
 
 app = FastAPI(
     title="SmartTutor API",
-    description="作业辅导智能体 API",
+    description="Homework tutoring API",
     version="2.0.0",
 )
 
@@ -61,7 +61,7 @@ async def chat(request: ChatRequest):
             reason=result.get("reason"),
         )
     except Exception as exc:
-        error_message = f"抱歉，发生了错误。请稍后重试。错误信息: {exc}"
+        error_message = f"Sorry, something went wrong. Please try again later. Error: {exc}"
         conversation_manager.add_message(session_id, "assistant", error_message)
         return ChatResponse(
             response=error_message,
@@ -99,7 +99,7 @@ async def get_conversation_summary(session_id: str):
 @app.delete("/conversation/{session_id}")
 async def clear_conversation(session_id: str):
     conversation_manager.clear_session(session_id)
-    return {"status": "success", "message": f"会话 {session_id} 已清除"}
+    return {"status": "success", "message": f"Conversation {session_id} has been cleared."}
 
 
 @app.get("/models")

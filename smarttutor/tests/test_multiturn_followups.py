@@ -203,13 +203,13 @@ def test_primary_school_student_can_ask_advanced_math_without_rejection(monkeypa
     monkeypatch.setattr(answer_generator, "generate_answer", fake_generate_answer)
 
     session_id = "primary-advanced-math"
-    first = orchestrator.process_message("我是小学生", session_id)
+    first = orchestrator.process_message("I am a primary school student", session_id)
     second = orchestrator.process_message("Can you explain calculus?", session_id)
 
     assert first["intent"] == "grade_info"
-    assert conversation_manager.get_grade(session_id) == "小学生"
+    assert conversation_manager.get_grade(session_id) == "primary school student"
     assert second["category"] == "valid_math"
-    assert captured["grade"] == "小学生"
+    assert captured["grade"] == "primary school student"
     assert "simple explanation" in second["response"]
 
 

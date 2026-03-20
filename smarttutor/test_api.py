@@ -42,18 +42,21 @@ def test_summary_endpoint_returns_structured_summary(monkeypatch):
     monkeypatch.setattr(
         "app.main.answer_generator.generate_summary",
         lambda session_id: {
-            "summary": "讨论了数学题。",
+            "summary": "We discussed a math problem.",
             "topics_discussed": ["math"],
             "unanswered_questions": [],
         },
         raising=False,
     )
-    monkeypatch.setattr("app.main.conversation_manager.get_grade", lambda session_id: "大一")
+    monkeypatch.setattr(
+        "app.main.conversation_manager.get_grade",
+        lambda session_id: "first-year university student",
+    )
 
     response = client.get("/conversation/session-1/summary")
 
     assert response.status_code == 200
     data = response.json()
-    assert data["summary"] == "讨论了数学题。"
+    assert data["summary"] == "We discussed a math problem."
     assert data["topics_discussed"] == ["math"]
-    assert data["user_grade"] == "大一"
+    assert data["user_grade"] == "first-year university student"

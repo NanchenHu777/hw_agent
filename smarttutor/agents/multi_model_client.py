@@ -85,19 +85,19 @@ class MultiModelClient:
                 fallback_llm = self.get_llm("default")
                 if fallback_llm is not None and fallback_llm is not llm:
                     try:
-                        print(f"LLM调用回退: {task} -> default")
+                        print(f"LLM fallback: {task} -> default")
                         response = fallback_llm.invoke(messages)
                         return response.content
                     except Exception as fallback_error:
-                        print(f"LLM回退失败 ({task} -> default): {fallback_error}")
+                        print(f"LLM fallback failed ({task} -> default): {fallback_error}")
 
-            print(f"LLM调用错误 ({task}): {error}")
-            return f"发生错误: {error}"
+            print(f"LLM error ({task}): {error}")
+            return f"Error: {error}"
 
     def chat(self, message: str, system_prompt: Optional[str] = None, task: str = "default") -> str:
         llm = self.get_llm(task)
         if llm is None:
-            return "错误：LLM未配置。请在 .env 文件中配置 API 密钥。"
+            return "Error: no LLM is configured. Please set the API credentials in your .env file."
 
         messages = []
         if system_prompt:
@@ -109,7 +109,7 @@ class MultiModelClient:
     def chat_with_history(self, messages: list, system_prompt: Optional[str] = None, task: str = "default") -> str:
         llm = self.get_llm(task)
         if llm is None:
-            return "错误：LLM未配置。请在 .env 文件中配置 API 密钥。"
+            return "Error: no LLM is configured. Please set the API credentials in your .env file."
 
         chat_messages = []
         if system_prompt:
@@ -143,7 +143,7 @@ class MultiModelClient:
                     response = response[:-3]
                 return json.loads(response.strip())
             except json.JSONDecodeError as error:
-                return {"error": f"无法解析JSON: {error}", "raw": response}
+                return {"error": f"Unable to parse JSON: {error}", "raw": response}
 
         return {"response": response}
 

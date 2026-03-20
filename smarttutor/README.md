@@ -237,62 +237,62 @@ python -m ui.gradio_app
 
 ---
 
-## 📖 使用说明
+## 📖 Usage
 
-### 通过 Web 界面
+### Via the Web UI
 
-1. 打开浏览器访问 `http://localhost:7861`
-2. 在输入框中输入您的问题
-3. 点击"发送"或按回车提交
+1. Open your browser and visit `http://localhost:7861`
+2. Type your question into the input box
+3. Click "Send" or press Enter to submit
 
-### 通过 API
+### Via the API
 
 ```bash
-# 发送聊天请求
+# Send a chat request
 curl -X POST "http://localhost:8000/chat" \
   -H "Content-Type: application/json" \
-  -d '{"message": "平方根1000是有理数吗？"}'
+  -d '{"message": "Is square root of 1000 rational?"}'
 
-# 获取对话历史
+# Get conversation history
 curl "http://localhost:8000/conversation/{session_id}/history"
 
-# 获取对话总结
+# Get a conversation summary
 curl "http://localhost:8000/conversation/{session_id}/summary"
 
-# 健康检查
+# Health check
 curl "http://localhost:8000/health"
 ```
 
 ---
 
-## 📝 示例对话
+## 📝 Example Dialogues
 
-### 示例 1: 数学问题
-
-```
-用户: 平方根1000是有理数吗？
-助手: 平方根1000不是有理数...
-```
-
-### 示例 2: 历史问题
+### Example 1: Math Question
 
 ```
-用户: 谁是法国第一任总统？
-助手: 法国第一任总统是路易-拿破仑·波拿巴...
+User: Is square root of 1000 rational?
+Assistant: Square root of 1000 is not a rational number...
 ```
 
-### 示例 3: 年级适配
+### Example 2: History Question
 
 ```
-用户: 我是大学一年级的学生
-助手: 好的，我已经记录您的年级为大一...
+User: Who was the first president of France?
+Assistant: The first president of France was Louis-Napoleon Bonaparte...
 ```
 
-### 示例 4: 无效问题被拒绝
+### Example 3: Grade Adaptation
 
 ```
-用户: 今天天气怎么样？
-助手: 抱歉，我只能回答数学和历史作业相关的问题...
+User: I am a first-year university student.
+Assistant: Thanks. I've recorded your grade level as first-year university student...
+```
+
+### Example 4: Rejected Invalid Question
+
+```
+User: What's the weather like today?
+Assistant: Sorry, I can't help with that because it is not a math or history homework question...
 ```
 
 ---

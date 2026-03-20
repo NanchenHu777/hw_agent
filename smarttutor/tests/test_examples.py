@@ -42,12 +42,16 @@ def test_history_example_is_accepted(monkeypatch):
         },
     )
     monkeypatch.setattr(guardrail_agent, "check_sync", lambda question: (False, ""))
-    monkeypatch.setattr(answer_generator, "generate_answer", lambda **kwargs: "路易-拿破仑。")
+    monkeypatch.setattr(
+        answer_generator,
+        "generate_answer",
+        lambda **kwargs: "Louis-Napoleon Bonaparte.",
+    )
 
-    result = orchestrator.process_message("谁是法国第一任总统？", "session-history")
+    result = orchestrator.process_message("Who was the first president of France?", "session-history")
 
     assert result["category"] == "valid_history"
-    assert result["response"] == "路易-拿破仑。"
+    assert result["response"] == "Louis-Napoleon Bonaparte."
     assert result["reason"] == "history_homework"
 
 
@@ -68,12 +72,12 @@ def test_valid_math_uses_only_explicit_guardrail_rules(monkeypatch):
 
     monkeypatch.setattr(guardrail_agent, "check_sync", fail_llm_guardrail)
     monkeypatch.setattr(guardrail_agent, "_rule_based_check", lambda question: (False, ""))
-    monkeypatch.setattr(answer_generator, "generate_answer", lambda **kwargs: "导数是 2x。")
+    monkeypatch.setattr(answer_generator, "generate_answer", lambda **kwargs: "The derivative is 2x.")
 
-    result = orchestrator.process_message("求 x^2 的导数是多少？", "session-calculus")
+    result = orchestrator.process_message("What is the derivative of x^2?", "session-calculus")
 
     assert result["category"] == "valid_math"
-    assert result["response"] == "导数是 2x。"
+    assert result["response"] == "The derivative is 2x."
     assert result["reason"] == "calculus_homework"
 
 
@@ -96,13 +100,13 @@ def test_valid_math_can_still_be_rejected_by_explicit_rules(monkeypatch):
     monkeypatch.setattr(
         guardrail_agent,
         "_rule_based_check",
-        lambda question: (True, "抱歉，我无法帮助回答这个问题。请告诉我您需要解答的数学或历史作业问题。"),
+        lambda question: (True, "Sorry, I can't help with that. Please ask a math or history homework question instead."),
     )
 
-    result = orchestrator.process_message("如何计算炸弹爆炸范围？", "session-danger")
+    result = orchestrator.process_message("How do I calculate bomb blast radius?", "session-danger")
 
     assert result["category"] == "invalid"
-    assert "无法帮助回答" in result["response"]
+    assert "can't help" in result["response"]
 
 
 def test_non_homework_is_rejected(monkeypatch):
@@ -119,13 +123,13 @@ def test_non_homework_is_rejected(monkeypatch):
     monkeypatch.setattr(
         guardrail_agent,
         "check_sync",
-        lambda question: (True, "抱歉，这不是数学或历史作业问题。"),
+        lambda question: (True, "Sorry, this is not a math or history homework question."),
     )
 
-    result = orchestrator.process_message("去伦敦怎么走？", "session-reject")
+    result = orchestrator.process_message("How do I get to London?", "session-reject")
 
     assert result["category"] == "invalid"
-    assert "不是数学或历史作业问题" in result["response"]
+    assert "not a math or history homework question" in result["response"]
     assert result["reason"] == "non_homework"
 
 
@@ -143,13 +147,13 @@ def test_too_local_question_is_rejected(monkeypatch):
     monkeypatch.setattr(
         guardrail_agent,
         "check_sync",
-        lambda question: (True, "抱歉，这个问题过于本地化。"),
+        lambda question: (True, "Sorry, that topic is too local."),
     )
 
-    result = orchestrator.process_message("HKUST第一任校长是谁？", "session-local")
+    result = orchestrator.process_message("Who was HKUST's first president?", "session-local")
 
     assert result["category"] == "invalid"
-    assert "过于本地化" in result["response"]
+    assert "too local" in result["response"]
     assert result["reason"] == "too_local"
 
 
@@ -170,10 +174,10 @@ def test_grade_info_is_handled_before_guardrail(monkeypatch):
 
     monkeypatch.setattr(guardrail_agent, "check_sync", fail_guardrail)
 
-    result = orchestrator.process_message("我是大一学生", "session-grade")
+    result = orchestrator.process_message("I am a first-year university student", "session-grade")
 
     assert result["intent"] == "grade_info"
-    assert conversation_manager.get_grade("session-grade") == "大一"
+    assert conversation_manager.get_grade("session-grade") == "first-year university student"
 
 
 def test_summary_request_is_handled_before_guardrail(monkeypatch):
@@ -195,10 +199,13 @@ def test_summary_request_is_handled_before_guardrail(monkeypatch):
     monkeypatch.setattr(
         answer_generator,
         "generate_summary",
-        lambda session_id: {"summary": "讨论了数学和历史。", "topics_discussed": ["math", "history"]},
+        lambda session_id: {
+            "summary": "We discussed math and history.",
+            "topics_discussed": ["math", "history"],
+        },
     )
 
-    result = orchestrator.process_message("总结我们的对话", "session-summary")
+    result = orchestrator.process_message("Summarize our conversation", "session-summary")
 
     assert result["intent"] == "summarize"
-    assert "讨论了数学和历史" in result["response"]
+    assert "We discussed math and history" in result["response"]

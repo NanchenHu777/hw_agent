@@ -64,29 +64,65 @@ class GuardrailAgent:
 
     def _generate_rejection_message(self, category: str, reasoning: str) -> str:
         reasoning = (reasoning or "").lower()
-        if "non_homework" in reasoning or category == "invalid":
-            return self.rejection_templates["non_homework"]
-        if "out_of_scope" in reasoning:
-            return self.rejection_templates["out_of_scope"]
-        if "too_local" in reasoning:
-            return self.rejection_templates["too_local"]
-        if "inappropriate" in reasoning:
+        if "inappropriate" in reasoning or "danger" in reasoning or "illegal" in reasoning:
             return self.rejection_templates["inappropriate"]
+        if "too_local" in reasoning or "too local" in reasoning or "local" in reasoning or "niche" in reasoning:
+            return self.rejection_templates["too_local"]
+        if "out_of_scope" in reasoning or "out of scope" in reasoning or "outside" in reasoning:
+            return self.rejection_templates["out_of_scope"]
+        if "non_homework" in reasoning or "non-homework" in reasoning or "not homework" in reasoning or category == "invalid":
+            return self.rejection_templates["non_homework"]
         return self.rejection_templates["default"]
 
     def _rule_based_check(self, question: str) -> Tuple[bool, str]:
         """Fallback checks for short, obvious prompts."""
         question_lower = question.lower()
 
-        inappropriate = ["暴力", "违法", "犯罪", "自杀", "赌博", "吸毒", "火药", "炸弹", "firecracker"]
+        inappropriate = [
+            "暴力",
+            "违法",
+            "犯罪",
+            "自杀",
+            "赌博",
+            "吸毒",
+            "火药",
+            "炸弹",
+            "firecracker",
+            "bomb",
+            "blast",
+            "blast radius",
+            "violence",
+            "illegal",
+            "crime",
+            "suicide",
+            "drugs",
+        ]
         if any(keyword in question_lower for keyword in inappropriate):
             return True, self.rejection_templates["inappropriate"]
 
-        out_of_scope = ["物理", "化学", "生物", "地理", "政治", "经济", "编程", "代码", "python"]
+        out_of_scope = [
+            "物理",
+            "化学",
+            "生物",
+            "地理",
+            "政治",
+            "经济",
+            "编程",
+            "代码",
+            "python",
+            "physics",
+            "chemistry",
+            "biology",
+            "geography",
+            "politics",
+            "economics",
+            "programming",
+            "code",
+        ]
         if any(keyword in question_lower for keyword in out_of_scope):
             return True, self.rejection_templates["out_of_scope"]
 
-        too_local = ["hkust", "科技大学", "校长", "本校", "小镇"]
+        too_local = ["hkust", "科技大学", "校长", "本校", "小镇", "our university", "campus-specific"]
         if any(keyword in question_lower for keyword in too_local):
             return True, self.rejection_templates["too_local"]
 
@@ -102,6 +138,16 @@ class GuardrailAgent:
             "怎么去",
             "最佳路线",
             "出行",
+            "travel",
+            "weather",
+            "movie",
+            "music",
+            "game",
+            "best route",
+            "route to",
+            "how do i get to",
+            "how to get to",
+            "trip",
         ]
         if any(keyword in question_lower for keyword in non_homework):
             return True, self.rejection_templates["non_homework"]

@@ -126,11 +126,11 @@ class AgentOrchestrator:
         if extracted_grade:
             self.conversation_manager.set_grade(session_id, extracted_grade)
             response_text = (
-                f"好的，我已经记录你的年级信息：{extracted_grade}。"
-                "接下来我会按这个水平回答你的数学或历史作业问题。"
+                f"Thanks. I've recorded your grade level as {extracted_grade}. "
+                "I'll tailor future math or history answers to that level."
             )
         else:
-            response_text = "好的，我收到你的信息了。你可以继续问数学或历史作业问题。"
+            response_text = "Thanks. I've noted that information. You can continue with a math or history homework question."
 
         self.conversation_manager.add_message(session_id, "assistant", response_text)
         return {
@@ -146,8 +146,8 @@ class AgentOrchestrator:
         summary_result = self.answer_generator.generate_summary(session_id)
         topics = summary_result.get("topics_discussed", [])
         response_text = (
-            f"对话总结:\n{summary_result.get('summary', '')}\n\n"
-            f"讨论过的主题: {', '.join(topics) if topics else '无'}"
+            f"Conversation summary:\n{summary_result.get('summary', '')}\n\n"
+            f"Topics discussed: {', '.join(topics) if topics else 'none'}"
         )
 
         self.conversation_manager.add_message(session_id, "assistant", response_text)

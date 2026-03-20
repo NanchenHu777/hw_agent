@@ -36,14 +36,14 @@ def chat(message: str, history: List) -> Tuple[str, List]:
     if session_id is None:
         session_id = init_session()
 
-    history.append([message, "正在思考..."])
+    history.append([message, "Thinking..."])
 
     try:
         result = orchestrator.process_message(message=message, session_id=session_id)
         session_id = result.get("session_id", session_id)
         history[-1][1] = result["response"]
     except Exception as exc:
-        history[-1][1] = f"发生错误: {exc}"
+        history[-1][1] = f"Error: {exc}"
 
     return "", history
 
@@ -54,7 +54,7 @@ def clear_history() -> Tuple[str, List]:
 
 
 def greet() -> str:
-    return "欢迎使用 SmartTutor。我可以帮助你解答数学和历史作业问题。"
+    return "Welcome to SmartTutor. I can help with math and history homework questions."
 
 
 def build_demo():
@@ -63,23 +63,23 @@ def build_demo():
 
     with gr.Blocks(title="SmartTutor") as demo:
         gr.Markdown("# SmartTutor")
-        gr.Markdown("帮助你解答数学和历史作业问题")
+        gr.Markdown("Your homework tutor for math and history questions.")
 
-        chatbot = gr.Chatbot(label="对话历史", height=500)
+        chatbot = gr.Chatbot(label="Conversation", height=500)
         msg_input = gr.Textbox(
-            label="输入问题",
-            placeholder="例如：x+1=2，谁是法国第一任总统？",
+            label="Question",
+            placeholder="For example: x+1=2, Who was the first president of France?",
         )
 
         with gr.Row():
-            submit_btn = gr.Button("发送", variant="primary")
-            clear_btn = gr.Button("清除")
+            submit_btn = gr.Button("Send", variant="primary")
+            clear_btn = gr.Button("Clear")
 
-        gr.Markdown("### 示例问题")
+        gr.Markdown("### Example Questions")
         gr.Markdown("- x+1=2")
-        gr.Markdown("- 谁是法国第一任总统？")
-        gr.Markdown("- 我是大一学生")
-        gr.Markdown("- 总结我们的对话")
+        gr.Markdown("- Who was the first president of France?")
+        gr.Markdown("- I am a first-year university student")
+        gr.Markdown("- Summarize our conversation")
 
         submit_btn.click(chat, [msg_input, chatbot], [msg_input, chatbot])
         msg_input.submit(chat, [msg_input, chatbot], [msg_input, chatbot])

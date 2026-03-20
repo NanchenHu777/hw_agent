@@ -39,7 +39,7 @@ class AnswerGenerator:
         history = self.conversation_manager.get_history(session_id)
         
         # 格式化年级信息
-        grade_info = grade if grade else "未指定年级"
+        grade_info = grade if grade else "unspecified"
         
         # 根据分类选择模型和构建提示
         if category == "valid_math":
@@ -55,7 +55,7 @@ class AnswerGenerator:
         # 如果有历史，添加上下文
         if history:
             context = self._build_context(history)
-            full_question = f"{context}\n\n当前问题: {question}"
+            full_question = f"{context}\n\nCurrent question: {question}"
         else:
             full_question = question
         
@@ -84,15 +84,15 @@ class AnswerGenerator:
         """Add a stronger instruction when the model refuses only because the topic is advanced."""
         return (
             f"{system_prompt}\n\n"
-            "重要补充：不要仅仅因为用户年级较低、题目较难或内容较进阶，就直接拒绝回答。"
-            "如果题目仍属于数学或历史，请先说明这是进阶内容，再用更简单的语言解释核心概念，"
-            "并尽量给出最基本的答案、结论或第一步。"
-            "只有在题目不属于数学/历史，或涉及不当内容时，才可以拒绝回答。"
+            "Important: do not refuse only because the user is young or the topic is advanced. "
+            "If the question is still about math or history, first say that it is advanced, then explain the core idea more simply, "
+            "and try to provide at least the basic answer, conclusion, or first step. "
+            "Only refuse if the question is not about math/history or is inappropriate."
         )
 
     def _needs_simplified_retry(self, response: str) -> bool:
         normalized = response.strip().lower()
-        if not normalized.startswith(("抱歉", "对不起", "sorry")):
+        if not normalized.startswith(("抱歉", "对不起", "sorry", "apologies")):
             return False
 
         grade_or_difficulty_markers = [
@@ -106,6 +106,10 @@ class AnswerGenerator:
             "可能有些复杂",
             "beyond",
             "too advanced",
+            "too difficult",
+            "too complex",
+            "too young",
+            "grade level",
         ]
         refusal_markers = ["无法帮助", "不能帮助", "不能回答", "cannot help", "can't help"]
 
@@ -117,9 +121,9 @@ class AnswerGenerator:
         """构建对话上下文"""
         context_messages = history[-6:]  # 只取最近6条消息
         
-        context = "对话历史:\n"
+        context = "Conversation history:\n"
         for msg in context_messages:
-            role = "用户" if msg["role"] == "user" else "助手"
+            role = "User" if msg["role"] == "user" else "Assistant"
             context += f"{role}: {msg['content']}\n"
         
         return context
@@ -139,7 +143,7 @@ class AnswerGenerator:
         
         if not history:
             return {
-                "summary": "当前对话为空。",
+                "summary": "The conversation is currently empty.",
                 "topics_discussed": [],
                 "unanswered_questions": []
             }
@@ -154,7 +158,7 @@ class AnswerGenerator:
         prompt = SUMMARY_PROMPT.format(conversation_history=conversation_history)
         
         result = self.llm_client.structured_output(
-            message="请总结以上对话",
+            message="Please summarize the conversation above.",
             system_prompt=prompt,
             task="default",
             format_json=True
@@ -163,13 +167,13 @@ class AnswerGenerator:
         if "error" in result:
             topics = self._extract_topics_simple(history)
             return {
-                "summary": f"对话包含{len(history)}条消息。",
+                "summary": f"The conversation contains {len(history)} messages.",
                 "topics_discussed": topics,
                 "unanswered_questions": []
             }
         
         return {
-            "summary": result.get("summary", "无法生成总结"),
+            "summary": result.get("summary", "Unable to generate a summary."),
             "topics_discussed": result.get("topics_discussed", []),
             "unanswered_questions": result.get("unanswered_questions", [])
         }
@@ -178,8 +182,8 @@ class AnswerGenerator:
         """简单提取主题"""
         topics = []
         keywords = {
-            "数学": ["计算", "求解", "方程", "函数", "几何", "代数"],
-            "历史": ["历史", "总统", "皇帝", "战争", "事件"]
+            "math": ["计算", "求解", "方程", "函数", "几何", "代数", "equation", "math", "solve", "calculus"],
+            "history": ["历史", "总统", "皇帝", "战争", "事件", "history", "president", "war", "dynasty"],
         }
         
         for msg in history:
