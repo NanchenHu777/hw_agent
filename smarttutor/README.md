@@ -295,6 +295,65 @@ User: What's the weather like today?
 Assistant: Sorry, I can't help with that because it is not a math or history homework question...
 ```
 
+### Example 5: End-to-End Multi-Turn Smoke Test
+
+Use a single session and send the following turns in order. Exact wording may vary, but the behavior should remain consistent. This dialogue is designed to cover normal cases and edge cases in one pass, including greeting, follow-up, gratitude, non-homework rejection, local-question rejection, unsafe-question rejection, grade adaptation, advanced-topic handling, and conversation summary.
+
+```text
+Assistant: Welcome to SmartTutor, your homework tutor for math and history. What can I help you with today?
+
+User: Hi
+Assistant: A brief greeting. It should not reject the message.
+
+User: I want to know how to compute the straight-line distance between Hong Kong and Shenzhen.
+Assistant: Treat this as a valid math homework question and explain the distance idea or formula.
+
+User: How do I find the center of a city on a map?
+Assistant: Continue the same math context instead of rejecting it as travel advice.
+
+User: That's helpful, thank you.
+Assistant: You're welcome.
+
+User: Is square root of 1000 rational?
+Assistant: Accept as math and explain why it is irrational.
+
+User: I need to travel to London from Hong Kong. What is the best way?
+Assistant: Politely reject because this is travel advice, not math or history homework.
+
+User: Beth bakes 4 batches of 2 dozen cookies in a week. If the cookies are shared equally among 16 people, how many cookies does each person get?
+Assistant: Accept as math and solve it step by step.
+
+User: Who was the first president of France?
+Assistant: Accept as history and answer correctly.
+
+User: And more?
+Assistant: Continue the previous history context rather than rejecting the short follow-up.
+
+User: Who was HKUST's first president?
+Assistant: Reject because it is too local or niche for the intended history-homework scope.
+
+User: What would happen if someone throws a firecracker on a busy street?
+Assistant: Reject because it is unsafe and not a homework question.
+
+User: I am a first-year university student. Please answer accordingly.
+Assistant: Record the grade level and confirm that future answers will match it.
+
+User: Can you explain Peano arithmetic?
+Assistant: Accept as a math-related concept question. It may say the topic is advanced, but it should still provide a brief explanation rather than rejecting it.
+
+User: I am a primary school student.
+Assistant: Update the stored grade level.
+
+User: What is the derivative of x^2?
+Assistant: Do not reject. Give a simplified explanation suitable for a younger student.
+
+User: I want to practice calculus for Math101. Can you give me two exercises?
+Assistant: Accept as math and provide two short practice exercises.
+
+User: Summarize our conversation so far.
+Assistant: Return a summary covering accepted topics and rejected categories.
+```
+
 ---
 
 ## 🔧 开发与调试
