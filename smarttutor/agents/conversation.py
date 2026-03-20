@@ -1,128 +1,181 @@
 """
-SmartTutor - 作业辅导智能体
-对话管理器 - 管理会话历史和上下文
+Conversation state management for SmartTutor.
 """
 
-import uuid
-import time
 import re
-from typing import Dict, Any, List, Optional
-from collections import defaultdict
+import time
+import uuid
+from typing import Any, Dict, List, Optional
 
 
 class ConversationManager:
-    """对话管理器 - 管理多轮对话"""
-    
+    """Manage multi-turn sessions and lightweight user state."""
+
+    FOLLOW_UP_PATTERNS = [
+        r"^and more\??$",
+        r"^explain more\??$",
+        r"^tell me more\??$",
+        r"^more details?\??$",
+        r"^can you elaborate\??$",
+        r"^go on\??$",
+        r"^continue\??$",
+        r"^what else\??$",
+        r"^why\??$",
+        r"^how\??$",
+        r"^how so\??$",
+        r"^when\??$",
+        r"^what year\??$",
+        r"^and then\??$",
+        r"^还有呢\??$",
+        r"^再多说一点\??$",
+        r"^解释更多\??$",
+        r"^展开讲讲\??$",
+        r"^然后呢\??$",
+        r"^为什么\??$",
+    ]
+
     def __init__(self):
-        # 会话存储: {session_id: {"messages": [], "grade": None, "created_at": float}}
         self.sessions: Dict[str, Dict[str, Any]] = {}
-        # 用户年级提取模式
         self.grade_patterns = [
-            (r"大学\s*一\s*年\s*级|大学\s*一年级|大一", "大一"),
-            (r"大学\s*二\s*年\s*级|大学\s*二年级|大二", "大二"),
-            (r"大学\s*三\s*年\s*级|大学\s*三年级|大三", "大三"),
-            (r"大学\s*四\s*年\s*级|大学\s*四年级|大四", "大四"),
-            (r"高中\s*一\s*年\s*级|高中\s*一年级|高一", "高一"),
-            (r"高中\s*二\s*年\s*级|高中\s*二年级|高二", "高二"),
-            (r"高中\s*三\s*年\s*级|高中\s*三年级|高三", "高三"),
-            (r"我是.*学生", "学生"),
-            (r"我\s*在\s*读", "学生"),
+            (r"小学生|小学\s*生|小学|primary school|elementary school", "primary school student"),
+            (
+                r"大学\s*一\s*年级|大学一年级|大一|first[- ]year university|first year university|university year\s*1|year\s*1 university|freshman",
+                "first-year university student",
+            ),
+            (
+                r"大学\s*二\s*年级|大学二年级|大二|second[- ]year university|second year university|university year\s*2|year\s*2 university|sophomore",
+                "second-year university student",
+            ),
+            (
+                r"大学\s*三\s*年级|大学三年级|大三|third[- ]year university|third year university|university year\s*3|year\s*3 university|junior",
+                "third-year university student",
+            ),
+            (
+                r"大学\s*四\s*年级|大学四年级|大四|fourth[- ]year university|fourth year university|university year\s*4|year\s*4 university|senior",
+                "fourth-year university student",
+            ),
+            (
+                r"高中\s*一\s*年级|高中一年级|高一|first[- ]year high school|first year high school|high school year\s*1",
+                "first-year high school student",
+            ),
+            (
+                r"高中\s*二\s*年级|高中二年级|高二|second[- ]year high school|second year high school|high school year\s*2",
+                "second-year high school student",
+            ),
+            (
+                r"高中\s*三\s*年级|高中三年级|高三|third[- ]year high school|third year high school|high school year\s*3",
+                "third-year high school student",
+            ),
+            (r"研究生|研一|研二|研三|postgraduate|graduate student", "postgraduate student"),
+            (r"博士|phd|doctoral student", "doctoral student"),
+            (r"i am.*student|我是.*学生", "student"),
         ]
-    
-    def create_session(self) -> str:
-        """创建新会话"""
-        session_id = str(uuid.uuid4())
-        self.sessions[session_id] = {
-            "messages": [],
-            "grade": None,
-            "created_at": time.time()
-        }
-        return session_id
-    
-    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
-        """获取会话"""
-        return self.sessions.get(session_id)
-    
-    def add_message(self, session_id: str, role: str, content: str):
-        """添加消息到会话"""
+
+    def create_session(self, session_id: Optional[str] = None) -> str:
+        """Create a new session, or initialize a provided session id."""
+        session_id = session_id or str(uuid.uuid4())
         if session_id not in self.sessions:
-            self.create_session(session_id)
-        
-        self.sessions[session_id]["messages"].append({
-            "role": role,
-            "content": content,
-            "timestamp": time.time()
-        })
-    
+            self.sessions[session_id] = {
+                "messages": [],
+                "grade": None,
+                "created_at": time.time(),
+                "last_response_kind": None,
+            }
+        return session_id
+
+    def _ensure_session(self, session_id: str) -> Dict[str, Any]:
+        self.create_session(session_id)
+        return self.sessions[session_id]
+
+    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+        return self.sessions.get(session_id)
+
+    def add_message(self, session_id: str, role: str, content: str):
+        session = self._ensure_session(session_id)
+        session["messages"].append(
+            {
+                "role": role,
+                "content": content,
+                "timestamp": time.time(),
+            }
+        )
+
     def get_history(self, session_id: str) -> List[Dict[str, str]]:
-        """获取对话历史"""
         session = self.get_session(session_id)
         if not session:
             return []
-        
-        return [
-            {"role": msg["role"], "content": msg["content"]}
-            for msg in session["messages"]
-        ]
-    
+
+        return [{"role": msg["role"], "content": msg["content"]} for msg in session["messages"]]
+
     def get_grade(self, session_id: str) -> Optional[str]:
-        """获取用户年级"""
         session = self.get_session(session_id)
         if not session:
             return None
         return session.get("grade")
-    
+
     def set_grade(self, session_id: str, grade: str):
-        """设置用户年级"""
-        if session_id not in self.sessions:
-            self.create_session(session_id)
-        self.sessions[session_id]["grade"] = grade
-    
+        session = self._ensure_session(session_id)
+        session["grade"] = grade
+
+    def get_last_response_kind(self, session_id: str) -> Optional[str]:
+        session = self.get_session(session_id)
+        if not session:
+            return None
+        return session.get("last_response_kind")
+
+    def set_last_response_kind(self, session_id: str, kind: Optional[str]):
+        session = self._ensure_session(session_id)
+        session["last_response_kind"] = kind
+
     def extract_grade_from_message(self, message: str) -> Optional[str]:
-        """从消息中提取年级信息"""
-        message_lower = message.lower()
-        
+        normalized_message = message.lower().strip()
+        if "小学生" in message or "小学" in message:
+            return "primary school student"
+        if "primary school" in normalized_message or "elementary school" in normalized_message:
+            return "primary school student"
+
         for pattern, grade in self.grade_patterns:
-            if re.search(pattern, message_lower):
+            if re.search(pattern, message, re.IGNORECASE):
                 return grade
-        
         return None
-    
+
     def is_grade_info(self, message: str) -> bool:
-        """检查消息是否包含年级信息"""
         return self.extract_grade_from_message(message) is not None
-    
+
+    def looks_like_contextual_followup(self, message: str) -> bool:
+        normalized_message = message.lower().strip()
+        if not normalized_message:
+            return False
+
+        if len(normalized_message.split()) <= 3:
+            if normalized_message in {"more", "more?", "details", "details?", "why", "why?", "how", "how?"}:
+                return True
+
+        return any(re.search(pattern, normalized_message, re.IGNORECASE) for pattern in self.FOLLOW_UP_PATTERNS)
+
     def format_history_for_llm(self, session_id: str, max_messages: int = 10) -> str:
-        """格式化对话历史供LLM使用"""
         session = self.get_session(session_id)
         if not session:
             return ""
-        
-        messages = session["messages"][-max_messages:]
-        formatted = []
-        
-        for msg in messages:
-            role = "用户" if msg["role"] == "user" else "助手"
-            formatted.append(f"{role}: {msg['content']}")
-        
-        return "\n".join(formatted)
-    
+
+        lines = []
+        for msg in session["messages"][-max_messages:]:
+            role = "User" if msg["role"] == "user" else "Assistant"
+            lines.append(f"{role}: {msg['content']}")
+        return "\n".join(lines)
+
     def clear_session(self, session_id: str):
-        """清除会话"""
-        if session_id in self.sessions:
-            del self.sessions[session_id]
-    
+        self.sessions.pop(session_id, None)
+
     def cleanup_old_sessions(self, max_age_seconds: int = 3600):
-        """清理旧会话"""
         current_time = time.time()
-        to_delete = [
-            sid for sid, session in self.sessions.items()
+        expired_ids = [
+            session_id
+            for session_id, session in self.sessions.items()
             if current_time - session["created_at"] > max_age_seconds
         ]
-        
-        for sid in to_delete:
-            del self.sessions[sid]
+        for session_id in expired_ids:
+            del self.sessions[session_id]
 
 
-# 全局对话管理器实例
 conversation_manager = ConversationManager()
